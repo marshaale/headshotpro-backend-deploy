@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  deploy:
     runs-on: self-hosted
 
     steps:
@@ -16,7 +16,7 @@ jobs:
       - name: Create .env
         run: |
           cd "${{ github.workspace }}"
-          echo "${{ github.BACKEND_ENV }}" > .env
+          echo "${{ secrets.BACKEND_ENV }}" > .env
           chmod 600 .env
           echo "Environment file created successfully"
 
@@ -24,28 +24,32 @@ jobs:
         run: |
           export PATH="$HOME/.bun/bin:$PATH"
 
-          if ! command -v bun &> /dev/null; then
+          if ! command -v bun >/dev/null 2>&1; then
             echo "📦 Installing Bun..."
             curl -fsSL https://bun.sh/install | bash
             export PATH="$HOME/.bun/bin:$PATH"
           fi
 
+          echo "Bun version:"
           bun --version
 
       - name: Install dependencies
         run: |
           export PATH="$HOME/.bun/bin:$PATH"
           cd "${{ github.workspace }}"
-          bun install
-
-      - name: Build
-        run: |
-          export PATH="$HOME/.bun/bin:$PATH"
-          cd "${{ github.workspace }}"
-          bun run build
+          bun install --frozen-lockfile
 
       - name: Restart Application
         run: |
+          export PATH="$HOME/.bun/bin:$PATH"
           cd "${{ github.workspace }}"
-          pm2 restart backend || pm2 start dist/index.js --name backend
+
+          if pm2 describe backend >/dev/null 2>&1; then
+            pm2 restart backend
+          else
+            pm2 start server.ts \
+              --name backend \
+              --interpreter "$HOME/.bun/bin/bun"
+          fi
+
           pm2 save
