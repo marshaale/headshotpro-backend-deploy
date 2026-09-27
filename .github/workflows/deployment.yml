@@ -1,0 +1,51 @@
+name: CI Backend to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env
+        run: |
+          cd "${{ github.workspace }}"
+          echo "${{ github.BACKEND_ENV }}" > .env
+          chmod 600 .env
+          echo "Environment file created successfully"
+
+      - name: Install Bun
+        run: |
+          export PATH="$HOME/.bun/bin:$PATH"
+
+          if ! command -v bun &> /dev/null; then
+            echo "📦 Installing Bun..."
+            curl -fsSL https://bun.sh/install | bash
+            export PATH="$HOME/.bun/bin:$PATH"
+          fi
+
+          bun --version
+
+      - name: Install dependencies
+        run: |
+          export PATH="$HOME/.bun/bin:$PATH"
+          cd "${{ github.workspace }}"
+          bun install
+
+      - name: Build
+        run: |
+          export PATH="$HOME/.bun/bin:$PATH"
+          cd "${{ github.workspace }}"
+          bun run build
+
+      - name: Restart Application
+        run: |
+          cd "${{ github.workspace }}"
+          pm2 restart backend || pm2 start dist/index.js --name backend
+          pm2 save
