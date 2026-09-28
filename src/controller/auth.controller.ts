@@ -13,7 +13,7 @@ import { type Request, type Response } from 'express';
 const cookieOptions = {
   httpOnly: true,
   secure: config.env === 'production',
-  sameSite: 'lax' as const,
+  sameSite: 'none' as const,
   domain: '.sotechho.com',
   path: '/',
 };
