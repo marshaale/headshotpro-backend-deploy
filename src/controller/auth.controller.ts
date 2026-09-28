@@ -14,6 +14,7 @@ const cookieOptions = {
   httpOnly: true,
   secure: config.env === 'production',
   sameSite: 'lax' as const,
+  domain: '.sotechho.com'
   path: '/',
 };
 
